@@ -1,0 +1,6 @@
+
+#pull official base image from dockerhub? I'm guessing to run a server for the relational database (but then is SQLAlchemy just to represent postgres tables as objects compatible with flask?)
+FROM postgres:15
+
+#run create.sql on init (ialization)
+ADD create.sql /docker-entrypoint-initdb.d
