@@ -1,49 +1,32 @@
-# __init__.py
-# you have to activate the server all in one line on windows:
-# $env:FLASK_APP = "src\__init__.py"; python manage.py run
 import os
-from flask import Flask, jsonify
-from flask_restx import Resource, Api
+from flask import Flask  # new
 from flask_sqlalchemy import SQLAlchemy
 
 
-# instantiate the app
-app = Flask(__name__)
-
-api = Api(app)
+# instantiate the db
+db = SQLAlchemy()
 
 
+# new
+def create_app(script_info=None):
+    # instantiate the app
+    app = Flask(__name__)
+    # set config
+    app_settings = os.getenv("APP_SETTINGS")
+    print(os.environ.get("APP_SETTINGS"))
+    app.config.from_object(app_settings)
+    # app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@api-db:5432/api_dev"
+    # set up extensions
+    db.init_app(app)
+    # register blueprints
+    from src.api.users import users_blueprint
+    from src.api.ping import ping_blueprint
+    app.register_blueprint(ping_blueprint)
+    app.register_blueprint(users_blueprint)
+    # shell context for flask cli
+    @app.shell_context_processor
+    def ctx():
+        return {"app": app, "db": db}
 
 
-# set config
-# app = the Flask instance
-# config is (an instance of the config.py class?)
-# 'from_object' is a builtin method for taking an object from that other class?
-# app.config I guess is a declared object of type config??
-app_settings = os.getenv('APP_SETTINGS')
-
-app.config.from_object('src.config.DevelopmentConfig')
-
-db = SQLAlchemy(app)
-
-class User(db.model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(128), nullable=False)
-    email = db.Column(db.String(128), nullable=False)
-    active = db.Column(db.Boolean(), default=True, nullable=False)
-
-    def __init__(self, username, email):
-        self.username = username
-        self.email = email
-
-
-# this is routing apparently
-class Ping(Resource):
-    def get(self):
-        return {
-            'status': 'success',
-            'message': 'pong!'
-        }
-
-api.add_resource(Ping, '/ping')
+    return app
